@@ -1,5 +1,5 @@
 from flask import request
-from api.index import app, socketio
+from api.index import app
 from api.controller import UserController
 from api.controller.UserController import registerUser
 from api.controller import ReminderController 
@@ -16,7 +16,7 @@ def register():
 
 @app.route('/login', methods = ['POST'])
 def logins():
-    return UserController.login(socketio)
+    return UserController.login()
 
 @app.route("/notification/<id>", methods=['GET'])
 def getAllNotification(id):
