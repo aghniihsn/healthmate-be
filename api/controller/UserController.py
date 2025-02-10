@@ -21,7 +21,7 @@ def singleObject(data):
         "created_at": data.created_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-def login(socketio):
+def login():
     try:
         data = request.get_json()
         email = data.get("email")
@@ -43,7 +43,6 @@ def login(socketio):
 
         access_token = create_access_token(identity=data_user, fresh=True, expires_delta=timedelta(days=7))
         refresh_token = create_refresh_token(identity=data_user, expires_delta=timedelta(days=7))
-        socketio.emit("notification", {'data': 'Hello from server!'})
         return response.success({
             "data": data_user,
             "access_token": access_token,
