@@ -1,22 +1,53 @@
+from flask import request, jsonify  
+from datetime import datetime, timedelta 
+# from threading import Thread  
+from sqlalchemy import and_   
+import time  
+
+from api import response
+from api.index import db, scheduler
 from api.model.reminder import Reminder  
 from api.model.notification import Notification  
 from api.model.medicine import Medicine  
 from api.model.user import User  
+from api.model.schedule import Schedule  
 from api.controller.NotifController import send_message
-from datetime import datetime, timedelta 
 
-from threading import Thread  
-import schedule  
-import time  
-  
-from api import response
-from api.index import app, db  
-from flask import request, jsonify  
-  
-def run_schedule():  
-    while True:  
-        schedule.run_pending()  
-        time.sleep(1)  
+# def run_schedule():  
+#     while True:  
+#         schedule.run_pending()  
+#         time.sleep(1)  
+
+def runJobs():
+    now = datetime.now()
+    today_date = now.date()  # Ambil tanggal hari ini (YYYY-MM-DD)
+    current_time = now.time()  # Ambil waktu sekarang (HH:MM:SS)
+
+    # Query: Ambil jadwal dengan tanggal lebih besar dari hari ini
+    # dan waktu yang lebih kecil atau sama dengan waktu sekarang
+    print(f"today_date: {today_date}")
+    print(f"current_time: {current_time}")
+    results = db.session.query(Schedule).all()
+    # .filter(
+    #     and_(
+    #         Schedule.schedule_end_date >= today_date,  # Hanya ambil tanggal lebih besar dari hari ini
+    #         Schedule.schedule_time <= current_time  # Waktu lebih kecil atau sama dengan saat ini
+    #     )
+    # )
+
+    print(f"results: {results}")
+    for schedule in results:
+        try:
+            user = User.query.filter_by(user_id=schedule.user_id).first()
+            token = schedule.token
+            target = schedule.target
+            message = schedule.message
+            send_message(token, target, message)  # Fungsi ini harus dibuat sendiri
+
+        except Exception as e:
+            print(f"Error executing job: {e}")
+
+    return {"status": "success", "message": f"Executed jobs at {now}"}
   
 def show():
     try:
@@ -94,30 +125,6 @@ def combine_date_time(date_str, time_str):
         print(f"Error combining date and time: {e}")
         return None
 
-# def detail(id):  
-#     try:  
-#         result = db.session.query(Reminder, Medicine).join(Medicine, Reminder.id_medicine == Medicine.id_medicine).filter(Reminder.id_reminder == id).first()  
-#         print (result).format()
-#         if not result:  
-#             return response.error('', 'Data tidak ditemukan')  
-  
-#         reminder, medicine = result  
-#         data = {  
-#             'id_reminder': reminder.id_reminder,  
-#             'reminder_time': reminder.reminder_time,  
-#             'description': reminder.description,  
-#             'medicine_name': medicine.medicine_name,  
-#             'dosage': medicine.dosage,  
-#             'frequency': medicine.frequency,  
-#             'start_date': medicine.start_date,  
-#             'end_date': medicine.end_date  
-#         }  
-  
-#         return response.success(data, 'Sukses Mengambil Detail Data')  
-#     except Exception as e:  
-#         print(e)  
-#         return response.error('', 'Gagal Mengambil Detail Data')  
-
 def history(user_id):  
     try:  
         results = (
@@ -169,15 +176,15 @@ def history(user_id):
         print(e)  
         return response.error('', 'Gagal Mengambil Detail Data')
 
-def schedule_reminders(reminder_time, frequency, token, target, message, id_reminder, user_id):  
+def schedule_reminders(end_date, reminder_time, frequency, token, target, message, id_reminder, user_id):  
     # interval = 24 * 60 // frequency  
     # for i in range(frequency):  
     #     reminder_datetime = reminder_time + timedelta(minutes=i * interval)  
     #     print(f"Scheduling message for {reminder_datetime}")  
-
+    user = User.query.filter_by(user_id=user_id).first()
+    schedule_time_mysql = datetime.strptime(reminder_time, '%H:%M:%S')  
     schedule_time = reminder_time[:5]
     print(f"Scheduling message for {schedule_time}")  
-
     try:
         medicine = Notification(  
             message=message, 
@@ -186,7 +193,24 @@ def schedule_reminders(reminder_time, frequency, token, target, message, id_remi
         )  
         db.session.add(medicine)  
         db.session.commit()
-        schedule.every().day.at(schedule_time).do(lambda t=token, tg=target, msg=message: send_message(t, tg, msg)).tag(id_reminder)
+        schedule = Schedule(  
+            message=message,
+            token=token,
+            target=target, 
+            schedule_time=schedule_time_mysql,
+            schedule_end_date=end_date,
+            user_id=user_id  
+        )  
+        db.session.add(schedule)  
+        db.session.commit()
+
+        scheduler.add_job(
+            lambda:send_message(token, target, message), 
+            "cron", 
+            hour=schedule_time.split(':')[0], 
+            minute=schedule_time.split(':')[1],
+            id=str(id_reminder), 
+        )  
         
     except Exception as e:  
         print(e)  
@@ -209,7 +233,7 @@ def save():
   
         reminder_time = datetime.strptime(reminder_time_str, '%H:%M:%S')  
         message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"    
-        token = "isXqfmAlByxY1LtvwGKZhc7krVouOTdIRp8DS6Jg"  
+        token = "v4.public.eyJhbGlhcyI6IkFyaSIsImV4cCI6IjIwMjUtMDMtMTJUMTA6NTI6MzlaIiwiaWF0IjoiMjAyNS0wMi0xMFQxMDo1MjozOVoiLCJpZCI6IjYyODU4NTIzMTU1OTAiLCJuYmYiOiIyMDI1LTAyLTEwVDEwOjUyOjM5WiJ9w8vKTFN-VsjDlojf2iq2M3Nu5mb-7M6FiJAdpSZ6gec2dDmF7g8zoi7zpU0TV8aBxgiMgb7pTZNbaegBLdBCDw"  
         target = user.phone_number
   
         medicine = Medicine(  
@@ -235,7 +259,7 @@ def save():
         db.session.commit()  
   
         print(f"result message for {reminder.id_reminder}")  
-        schedule_reminders(reminder_time_str, frequency, token, target, message, reminder.id_reminder, user_id)  
+        schedule_reminders(data.get('end_date'), reminder_time_str, frequency, token, target, message, reminder.id_reminder, user_id)  
   
         return jsonify({"status": "success", "message": "Sukses Menambahkan Data Reminder dan Medicine"})  
     except Exception as e:  
@@ -283,12 +307,12 @@ def ubah(id_reminder):
 
         # Reschedule reminders if necessary  
         if reminder_time_str or frequency:    
-            token = "isXqfmAlByxY1LtvwGKZhc7krVouOTdIRp8DS6Jg"    
+            token = "v4.public.eyJhbGlhcyI6IkFyaSIsImV4cCI6IjIwMjUtMDMtMTJUMTA6NTI6MzlaIiwiaWF0IjoiMjAyNS0wMi0xMFQxMDo1MjozOVoiLCJpZCI6IjYyODU4NTIzMTU1OTAiLCJuYmYiOiIyMDI1LTAyLTEwVDEwOjUyOjM5WiJ9w8vKTFN-VsjDlojf2iq2M3Nu5mb-7M6FiJAdpSZ6gec2dDmF7g8zoi7zpU0TV8aBxgiMgb7pTZNbaegBLdBCDw"    
             target = User.query.get(reminder.user_id).phone_number    
             message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"  
 
             schedule.clear(id_reminder)  # Clear the existing schedule  
-            schedule_reminders(reminder_time_str, frequency, token, target, message, id_reminder, reminder.user_id)    
+            schedule_reminders(end_date, reminder_time_str, frequency, token, target, message, id_reminder, reminder.user_id)    
 
         return jsonify({"status": "success", "message": "Sukses Mengupdate Data Reminder dan Medicine"})    
 

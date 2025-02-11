@@ -1,7 +1,6 @@
-from api.index import db
-
 from datetime import datetime
 
+from api.index import db
 class Medicine(db.Model):
     id_medicine = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
     medicine_name = db.Column(db.String(250), nullable=False)

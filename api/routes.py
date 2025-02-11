@@ -1,35 +1,56 @@
-from flask import request
+from flask import request, jsonify
+import datetime
 from api.index import app
 from api.controller import UserController
-from api.controller.UserController import registerUser
 from api.controller import ReminderController 
 from api.controller import NotifController
-from flask import jsonify
 
 @app.route('/')
 def index():
     return 'Hello Flask'
 
+@app.route("/notif/webhook/nomor/6281564602171", methods=['GET'])
+def getMessage():
+    return NotifController.getMessage()
+
+@app.route("/notif/<user_id>", methods=['GET'])
+def getAllNotification(user_id):
+    return NotifController.getAll(user_id)
+
+@app.route('/notif/send_message', methods=['POST'])
+def send_message():
+    return NotifController.send_message()
+
+@app.route('/notif/send_notification', methods=['POST'])  
+def send_notification():  
+    data = request.json  
+    message = data.get('message')  
+    NotifController.send_notification_via_websocket(message)  
+    return jsonify({"status": "success", "message": "Notification sent via WebSocket"})   
+
+# User
 @app.route('/register', methods=['POST'])
 def register():
-    return registerUser()
+    return UserController.signUpUser()
 
 @app.route('/login', methods = ['POST'])
 def logins():
-    return UserController.login()
-
-@app.route("/notification/<id>", methods=['GET'])
-def getAllNotification(id):
-    return NotifController.getAll(id)
+    return UserController.loginUser()
 
 @app.route('/allUser', methods=['GET'])
 def getAllUser():
     return UserController.getAllUsers()
 
-@app.route('/user-by-token', methods = ['POST'])
-def userByToken():
-    return UserController.getUserbyToken()
+@app.route('/update-profile', methods=['PUT'])
+def update_profile():
+    return UserController.updateProfile()
 
+# @app.route('/user-by-token', methods = ['POST'])
+# def userByToken():
+#     return UserController.getUserbyToken()
+# End User
+
+# Reminder
 @app.route('/reminder', methods=['GET', 'POST'])
 def reminder(): 
     if request.method == 'GET':
@@ -37,30 +58,22 @@ def reminder():
     else:
         return ReminderController.save()
 
-@app.route('/history/<id>', methods=['GET'])
-def history(id):
-    return ReminderController.history(id)
-    
-@app.route('/reminder/<id>', methods=['GET', 'PUT', 'DELETE'])
-def reminderDetail(id):
+@app.route('/reminder/<user_id>', methods=['GET', 'PUT', 'DELETE'])
+def reminderDetail(user_id):
     if request.method == 'GET':
-        return ReminderController.detail(id)
+        return ReminderController.detail(user_id)
     elif request.method == 'PUT':
-        return ReminderController.ubah(id)
+        return ReminderController.ubah(user_id)
     elif request.method == 'DELETE' :
-        return ReminderController.hapus(id)
+        return ReminderController.hapus(user_id)
     
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    return NotifController.send_message()
+@app.route('/reminder/history/<user_id>', methods=['GET'])
+def history(user_id):
+    return ReminderController.history(user_id)
 
-@app.route('/send_notification', methods=['POST'])  
-def send_notification():  
-    data = request.json  
-    message = data.get('message')  
-    NotifController.send_notification_via_websocket(message)  
-    return jsonify({"status": "success", "message": "Notification sent via WebSocket"})   
+@app.route("/reminder/run-jobs", methods=["GET"])
+def run_jobs():
+    return ReminderController.runJobs()
+    
 
-@app.route('/update-profile', methods=['PUT'])
-def update_profile():
-    return UserController.updateProfile()
+# End Reminder

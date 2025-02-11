@@ -1,8 +1,4 @@
 from flask import request
-from api import response
-from api.index import app, db
-# from flask_socketio import SocketIO, emit  
-
 from flask_jwt_extended import (
     jwt_required,
     create_access_token,
@@ -10,7 +6,11 @@ from flask_jwt_extended import (
     get_jwt_identity,
 )
 from datetime import datetime, timedelta
+
+from api import response
+from api.index import app, db
 from api.model.user import User
+# from flask_socketio import SocketIO, emit  
 
 def singleObject(data):
     return {
@@ -21,7 +21,7 @@ def singleObject(data):
         "created_at": data.created_at.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-def login():
+def loginUser():
     try:
         data = request.get_json()
         email = data.get("email")
@@ -37,9 +37,12 @@ def login():
 
         if not user.checkPassword(password):
             return response.BadRequest([], "Kombinasi email dan password salah")
-
+        
+        
         data_user = singleObject(user)
         data_user['user_id'] = user.user_id
+        db.session.commit()
+
 
         access_token = create_access_token(identity=data_user, fresh=True, expires_delta=timedelta(days=7))
         refresh_token = create_refresh_token(identity=data_user, expires_delta=timedelta(days=7))
@@ -52,16 +55,8 @@ def login():
         print(f"Error saat login: {e}")
         return response.error([], "Gagal login")
 
-@jwt_required()
-def getUserProfile():
-    try:
-        current_user = get_jwt_identity()
-        return response.success(current_user, "User berhasil di-autentikasi")
-    except Exception as e:
-        print(f"Error: {e}")
-        return response.error([], "Terjadi kesalahan saat mengambil profil user", 500)
 
-def registerUser():
+def signUpUser():
     try:
         data = request.get_json()
         name = data.get("name")
@@ -88,6 +83,15 @@ def registerUser():
     except Exception as e:
         print(f"Error saat mendaftarkan user: {e}")
         return response.error([], "Gagal mendaftarkan user")
+
+@jwt_required()
+def getUserProfile():
+    try:
+        current_user = get_jwt_identity()
+        return response.success(current_user, "User berhasil di-autentikasi")
+    except Exception as e:
+        print(f"Error: {e}")
+        return response.error([], "Terjadi kesalahan saat mengambil profil user", 500)
 
     
 def getAllUsers():

@@ -1,14 +1,14 @@
-from api.index import db, socketio
 from api import response
+from api.index import db
 from api.model.notification import Notification  
-
 from api.model.medicine import Medicine  
+
 import requests
 
-def getAll(id):  
+def getAll(user_id):  
     try:  
         # Ambil data dari database dengan join antara Reminder dan Medicine
-        result = db.session.query(Notification).filter(Notification.user_id == id).all()
+        result = db.session.query(Notification).filter(Notification.user_id == user_id).all()
         
         # Debugging: Cetak hasil ke terminal
         print(f"result: {result}")
@@ -35,30 +35,55 @@ def getAll(id):
         return response.error('', 'Gagal Mengambil Detail Data')
 
 
-def send_notif(token, target, message):
+def send_notif(target, message):
+    print(f"Sending notif...")  # Debugging
+    
     try:
-       socketio.emit("notification", message)
+       
+        url = "https://api.onesignal.com/notifications?c=push"
+        payload = {
+            "app_id": "25850dc0-06ac-45c7-bbfb-3681b2a4450b",
+            "contents": { "en": message },
+            "included_segments": []
+        }
+        headers = {
+            "accept": "application/json",
+            "Authorization": "os_v2_app_ewcq3qagvrc4po73g2a3fjcfbns5gemf2eretgmoyysttjc4ntbygsg47cqh6jmij4fnlzn5y5pglqta2hbtes7ekpdd4e32xbdamma",
+            "content-type": "application/json"
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
+
+        print('Successfully sent notif:', response.text)
+        
     except requests.exceptions.RequestException as e:
         print(f"Error sending notif: {str(e)}")
         return {"error": str(e)}
 
 def send_message(token, target, message):
     print(f"Sending message to {target}: {message}")  # Debugging
-    url = "https://dash.pushwa.com/api/kirimPesan"
+    # url = "https://dash.pushwa.com/api/kirimPesan"
+    # payload = {
+    #     "token": token,
+    #     "target": target,
+    #     "type": "text",
+    #     "delay": "1",
+    #     "message": message,
+    # }
+    url = "https://api.wa.my.id/api/v2/send/message/text"
     payload = {
-        "token": token,
-        "target": target,
-        "type": "text",
-        "delay": "1",
-        "message": message,
+        "to": "6281564602171",
+        "isgroup": False,
+        "messages": message
     }
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "token": token
     }
     try:
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        send_notif(token, target, message)
+        send_notif(target, message)
         return response.json()  # Mengembalikan respons dari API
     except requests.exceptions.RequestException as e:
         print(f"Error sending message: {str(e)}")
@@ -67,3 +92,8 @@ def send_message(token, target, message):
 def send_notification_via_websocket(message):  
     print(f"Sending WebSocket notification: {message}")  # Debugging  
     socketio.emit('notification', {'message': message}, broadcast=True)
+    
+
+def getMessage(message):  
+    print(f"Message from wa.my.id: {message}")  # Debugging  
+    # socketio.emit('notification', {'message': message}, broadcast=True)

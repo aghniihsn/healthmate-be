@@ -1,6 +1,7 @@
-from api.index import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from api.index import db
 
 class User(db.Model):
     user_id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
