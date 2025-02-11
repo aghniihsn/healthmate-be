@@ -233,7 +233,7 @@ def save():
   
         reminder_time = datetime.strptime(reminder_time_str, '%H:%M:%S')  
         message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"    
-        token = "v4.public.eyJhbGlhcyI6IkFyaSIsImV4cCI6IjIwMjUtMDMtMTJUMTA6NTI6MzlaIiwiaWF0IjoiMjAyNS0wMi0xMFQxMDo1MjozOVoiLCJpZCI6IjYyODU4NTIzMTU1OTAiLCJuYmYiOiIyMDI1LTAyLTEwVDEwOjUyOjM5WiJ9w8vKTFN-VsjDlojf2iq2M3Nu5mb-7M6FiJAdpSZ6gec2dDmF7g8zoi7zpU0TV8aBxgiMgb7pTZNbaegBLdBCDw"  
+        token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTNUMTA6NDY6MDBaIiwiaWF0IjoiMjAyNS0wMi0xMVQxMDo0NjowMFoiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTExVDEwOjQ2OjAwWiJ971RP8tu70Ztr8uSaeX5FRORzq60LkGghgmNkFBi5EyEs2zmLFhiYf5x3Cah1xKKyjaaUK2ggiCDbFHKy6MIZAg"  
         target = user.phone_number
   
         medicine = Medicine(  

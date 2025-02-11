@@ -72,7 +72,7 @@ def send_message(token, target, message):
     # }
     url = "https://api.wa.my.id/api/v2/send/message/text"
     payload = {
-        "to": "6281564602171",
+        "to": target,
         "isgroup": False,
         "messages": message
     }
