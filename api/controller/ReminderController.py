@@ -34,12 +34,12 @@ def runJobs():
     #         Schedule.schedule_time <= current_time  # Waktu lebih kecil atau sama dengan saat ini
     #     )
     # )
-
+    token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTNUMTA6NDY6MDBaIiwiaWF0IjoiMjAyNS0wMi0xMVQxMDo0NjowMFoiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTExVDEwOjQ2OjAwWiJ971RP8tu70Ztr8uSaeX5FRORzq60LkGghgmNkFBi5EyEs2zmLFhiYf5x3Cah1xKKyjaaUK2ggiCDbFHKy6MIZAg"  
+      
     print(f"results: {results}")
     for schedule in results:
         try:
             user = User.query.filter_by(user_id=schedule.user_id).first()
-            token = schedule.token
             target = schedule.target
             message = schedule.message
             send_message(token, target, message)  # Fungsi ini harus dibuat sendiri
