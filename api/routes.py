@@ -71,7 +71,7 @@ def reminderDetail(user_id):
 def history(user_id):
     return ReminderController.history(user_id)
 
-@app.route("/reminder/run-jobs", methods=["GET"])
+@app.route("/reminder/run-jobs", methods=["POST"])
 def run_jobs():
     return ReminderController.runJobs()
     
