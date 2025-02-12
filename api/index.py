@@ -5,6 +5,10 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import threading
+import schedule
+import time
+
 from dotenv import load_dotenv
 import os
 
@@ -56,6 +60,14 @@ print(f'prepare flask, config, jwt, db, migrate')
 
 from api.model import user, medicine, reminder, notification
 from api import routes
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+scheduler_thread = threading.Thread(target=run_scheduler)
+scheduler_thread.start()
 
 if __name__ == '__main__':
     

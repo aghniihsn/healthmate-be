@@ -5,7 +5,7 @@ from sqlalchemy import and_
 import time  
 
 from api import response
-from api.index import db, scheduler
+from api.index import db, scheduler, schedule as appSchedule
 from api.model.reminder import Reminder  
 from api.model.notification import Notification  
 from api.model.medicine import Medicine  
@@ -34,7 +34,7 @@ def runJobs():
     #         Schedule.schedule_time <= current_time  # Waktu lebih kecil atau sama dengan saat ini
     #     )
     # )
-    token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTNUMTA6NDY6MDBaIiwiaWF0IjoiMjAyNS0wMi0xMVQxMDo0NjowMFoiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTExVDEwOjQ2OjAwWiJ971RP8tu70Ztr8uSaeX5FRORzq60LkGghgmNkFBi5EyEs2zmLFhiYf5x3Cah1xKKyjaaUK2ggiCDbFHKy6MIZAg"  
+    token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTRUMTM6MDA6NDdaIiwiaWF0IjoiMjAyNS0wMi0xMlQxMzowMDo0N1oiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTEyVDEzOjAwOjQ3WiJ9uN4EnB84BW6j2tonmP4aOU8Hy1PWmTGSlD53kDXDEgAW7QhZTQVEEiD-LEs6V2RYY-yg_rSjj7tDjGxu95pmAw"  
       
     print(f"results: {results}")
     for schedule in results:
@@ -193,6 +193,7 @@ def schedule_reminders(end_date, reminder_time, frequency, token, target, messag
         )  
         db.session.add(medicine)  
         db.session.commit()
+        print(f"commit notification{schedule_time}")
         schedule = Schedule(  
             message=message,
             token=token,
@@ -201,20 +202,61 @@ def schedule_reminders(end_date, reminder_time, frequency, token, target, messag
             schedule_end_date=end_date,
             user_id=user_id  
         )  
+        print(f"commit schedule")
+
         db.session.add(schedule)  
         db.session.commit()
 
-        scheduler.add_job(
-            lambda:send_message(token, target, message), 
-            "cron", 
-            hour=schedule_time.split(':')[0], 
-            minute=schedule_time.split(':')[1],
-            id=str(id_reminder), 
-        )  
+        # scheduler.add_job(
+        #     lambda:send_message(token, target, message), 
+        #     "cron", 
+        #     hour=schedule_time.split(':')[0], 
+        #     minute=schedule_time.split(':')[1],
+        #     id=str(id_reminder), 
+        # )  
+        appSchedule.every().day.at(schedule_time).do(lambda t=token, tg=target, msg=message: send_message(t, tg, msg)).tag(id_reminder)
+  
         
     except Exception as e:  
         print(e)  
         db.session.rollback()  
+
+# def reschedule_reminders(end_date, reminder_time, frequency, token, target, message, id_reminder, user_id):  
+#     # interval = 24 * 60 // frequency  
+#     # for i in range(frequency):  
+#     #     reminder_datetime = reminder_time + timedelta(minutes=i * interval)  
+#     #     print(f"Scheduling message for {reminder_datetime}")  
+#     user = User.query.filter_by(user_id=user_id).first()
+#     schedule_time_mysql = datetime.strptime(reminder_time, '%H:%M:%S')  
+#     schedule_time = reminder_time[:5]
+#     print(f"Scheduling message for {schedule_time}")  
+#     try:
+#         medicine = Notification(  
+#             message=message, 
+#             id_reminder=id_reminder, 
+#             user_id=user_id  
+#         )  
+#         db.session.add(medicine)  
+#         db.session.commit()
+#         print(f"commit notification{schedule_time}")
+#         schedule = Schedule(  
+#             message=message,
+#             token=token,
+#             target=target, 
+#             schedule_time=schedule_time_mysql,
+#             schedule_end_date=end_date,
+#             user_id=user_id  
+#         )  
+#         print(f"commit schedule")
+
+#         db.session.add(schedule)  
+#         db.session.commit()
+
+#         scheduler.reschedule_job(str(id_reminder), hour=schedule_time.split(':')[0], minute=schedule_time.split(':')[1])
+
+#     except Exception as e:  
+#         print(e)  
+#         db.session.rollback()  
 
 def save():  
     try:  
@@ -233,7 +275,7 @@ def save():
   
         reminder_time = datetime.strptime(reminder_time_str, '%H:%M:%S')  
         message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"    
-        token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTNUMTA6NDY6MDBaIiwiaWF0IjoiMjAyNS0wMi0xMVQxMDo0NjowMFoiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTExVDEwOjQ2OjAwWiJ971RP8tu70Ztr8uSaeX5FRORzq60LkGghgmNkFBi5EyEs2zmLFhiYf5x3Cah1xKKyjaaUK2ggiCDbFHKy6MIZAg"  
+        token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTRUMTM6MDA6NDdaIiwiaWF0IjoiMjAyNS0wMi0xMlQxMzowMDo0N1oiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTEyVDEzOjAwOjQ3WiJ9uN4EnB84BW6j2tonmP4aOU8Hy1PWmTGSlD53kDXDEgAW7QhZTQVEEiD-LEs6V2RYY-yg_rSjj7tDjGxu95pmAw"  
         target = user.phone_number
   
         medicine = Medicine(  
@@ -244,6 +286,7 @@ def save():
         )  
         db.session.add(medicine)  
         db.session.commit()    
+        print(f"commit medicine")  
   
         reminder = Reminder(  
             reminder_time=reminder_time,  
@@ -255,10 +298,12 @@ def save():
         )  
         db.session.add(reminder)
 
+        print(f"commit reminder")  
 
         db.session.commit()  
   
         print(f"result message for {reminder.id_reminder}")  
+
         schedule_reminders(data.get('end_date'), reminder_time_str, frequency, token, target, message, reminder.id_reminder, user_id)  
   
         return jsonify({"status": "success", "message": "Sukses Menambahkan Data Reminder dan Medicine"})  
@@ -305,14 +350,15 @@ def ubah(id_reminder):
         # Update the reminder and medicine in the database  
         db.session.commit()
 
+        token = "v4.public.eyJhbGlhcyI6ImFnaG5paSIsImV4cCI6IjIwMjUtMDMtMTRUMTM6MDA6NDdaIiwiaWF0IjoiMjAyNS0wMi0xMlQxMzowMDo0N1oiLCJpZCI6IjYyODE1NjQ2MDIxNzEiLCJuYmYiOiIyMDI1LTAyLTEyVDEzOjAwOjQ3WiJ9uN4EnB84BW6j2tonmP4aOU8Hy1PWmTGSlD53kDXDEgAW7QhZTQVEEiD-LEs6V2RYY-yg_rSjj7tDjGxu95pmAw"    
+        target = User.query.get(reminder.user_id).phone_number    
+        message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"  
         # Reschedule reminders if necessary  
         if reminder_time_str or frequency:    
-            token = "v4.public.eyJhbGlhcyI6IkFyaSIsImV4cCI6IjIwMjUtMDMtMTJUMTA6NTI6MzlaIiwiaWF0IjoiMjAyNS0wMi0xMFQxMDo1MjozOVoiLCJpZCI6IjYyODU4NTIzMTU1OTAiLCJuYmYiOiIyMDI1LTAyLTEwVDEwOjUyOjM5WiJ9w8vKTFN-VsjDlojf2iq2M3Nu5mb-7M6FiJAdpSZ6gec2dDmF7g8zoi7zpU0TV8aBxgiMgb7pTZNbaegBLdBCDw"    
-            target = User.query.get(reminder.user_id).phone_number    
-            message = "Ini adalah pesan dari Health Mate -- Waktunya Minum Obat Jangan Sampai Terlambat!"  
 
-            schedule.clear(id_reminder)  # Clear the existing schedule  
-            schedule_reminders(end_date, reminder_time_str, frequency, token, target, message, id_reminder, reminder.user_id)    
+            appSchedule.clear(id_reminder)  # Clear the existing schedule  
+            schedule_reminders(end_date, reminder_time_str, frequency, token, target, message, id_reminder, reminder.user_id)  
+        # reschedule_reminders(end_date, reminder_time_str, frequency, token, target, message, id_reminder, reminder.user_id)    
 
         return jsonify({"status": "success", "message": "Sukses Mengupdate Data Reminder dan Medicine"})    
 
@@ -331,6 +377,7 @@ def hapus(id_reminder):
         if not medicine:  
             return response.error('', 'Data Medicine tidak ditemukan')  
   
+        appSchedule.clear(id_reminder)  # Clear the existing schedule  
         db.session.delete(reminder)  
         db.session.delete(medicine)  
         db.session.commit()  
