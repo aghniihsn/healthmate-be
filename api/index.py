@@ -34,7 +34,11 @@ class Config(object):
     print(f'prod', isProd)
     print(f'HOST', HOST)
 
-    SQLALCHEMY_DATABASE_URI = f"{DB_SCHEME}://{USERNAME}:{PASSWORD}@{HOST}:{DB_PORT}/{DATABASE}"
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+    if DATABASE_URL:
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    else:
+        SQLALCHEMY_DATABASE_URI = f"{DB_SCHEME}://{USERNAME}:{PASSWORD}@{HOST}:{DB_PORT}/{DATABASE}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERY = True
     SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
