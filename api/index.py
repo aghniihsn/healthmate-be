@@ -57,7 +57,13 @@ app.config.from_object(Config)
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-CORS(app)
+CORS(app, origins=[
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://healthmate-fe-beta.vercel.app",
+    "https://healthmate-be-jade.vercel.app",
+])
 print(f'prepare flask, config, jwt, db, migrate')
 
 from api.model import user, medicine, reminder, notification
