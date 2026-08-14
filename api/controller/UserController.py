@@ -59,6 +59,8 @@ def loginUser():
 def signUpUser():
     try:
         data = request.get_json()
+        if data is None:
+            return response.BadRequest([], "Payload JSON tidak valid atau tidak dikirim")
         name = data.get("name")
         email = data.get("email")
         phone_number = data.get("phone_number")
